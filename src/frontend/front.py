@@ -167,7 +167,7 @@ class Dashboard:
             payout_sum = df['payout'].sum()
             point_sum = df.get('point_post_payout', pd.Series(dtype='float')).sum()
             sale_sum = df.get('sale_amount', pd.Series(dtype='float')).sum()
-            total_users = df['order_id'].nunique() if 'order_id' in df.columns else 0
+            total_order = df['order_id'].nunique() if 'order_id' in df.columns else 0
 
             kpi_cards = [
                 html.Div([html.H4("Payout Sum"), html.P(f"₹ {payout_sum:,.2f}")],
@@ -176,7 +176,7 @@ class Dashboard:
                          style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
                 html.Div([html.H4("Sale Amount"), html.P(f"₹ {sale_sum:,.2f}")],
                          style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
-                html.Div([html.H4("Total Users"), html.P(f"{total_users:,}")],
+                html.Div([html.H4("Total Order"), html.P(f"{total_order:,}")],
                          style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'})
             ]
 
@@ -223,7 +223,7 @@ class Dashboard:
                 hovermode='x unified'
             )
 
-            full_data = df.head(100).to_dict('records')
+            full_data = df.head(10).to_dict('records')
             full_columns = [{'name': col, 'id': col} for col in df.columns]
 
             return pivot_data, pivot_columns, fig, full_data, full_columns, kpi_cards
@@ -233,6 +233,8 @@ class Dashboard:
         self.app.run(debug=True)
 
 
+dashboard = Dashboard()
+app = dashboard.app  # <- expose Dash's internal Flask server
+
 if __name__ == "__main__":
-    dashboard = Dashboard()
     dashboard.run()
