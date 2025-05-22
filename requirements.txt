@@ -1,9 +1,3 @@
-pandas
-plotly
-numpy
-matplotlib
-dash
-pyodbc
 pandas>=2.2.2
 plotly>=5.22.0
 numpy>=1.25.0
