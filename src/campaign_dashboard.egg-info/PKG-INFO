@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: campaign_dashboard
+Version: 0.1.0
+Summary: A dashboard application to visualize campaign data from SQL Server
+Author: Maruf khan
+Author-email: mk7446683@gmail.com
+Requires-Python: >=3.13
+Requires-Dist: dash>=2.17.0
+Requires-Dist: pandas>=2.2.2
+Requires-Dist: plotly>=5.22.0
+Requires-Dist: pyodbc>=5.1.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
