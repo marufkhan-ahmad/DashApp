@@ -41,7 +41,7 @@ class Dashboard:
                 start_date=df['action_date'].min().date() if not df.empty else pd.to_datetime("2020-01-01"),
                 end_date=df['action_date'].max().date() if not df.empty else pd.to_datetime("2025-12-31"),
                 display_format='YYYY-MM-DD',
-                style={'width': '100%', 'fontSize': '10px'}
+                style={'width': '200%', 'fontSize': '10px'}
             ),
 
             html.Label("Telegramers Name:", style={'fontSize': '15px'}),
@@ -233,7 +233,7 @@ class Dashboard:
 
 
 dashboard = Dashboard()
-app = dashboard.app  # For gunicorn
+app = dashboard.app.server  # For gunicorn
 
 if __name__ == "__main__":
     dashboard.run()
