@@ -19,7 +19,6 @@ class Dashboard:
         try:
             columns, data = self.db.fetch_data()
             df = pd.DataFrame(data, columns=columns)
-            df.columns = df.columns.str.strip()  # Clean column names
             df['action_date'] = pd.to_datetime(df['action_date'], errors='coerce')
             df.dropna(subset=['action_date'], inplace=True)
             return df
@@ -27,15 +26,13 @@ class Dashboard:
             self.logger.error(f"Data loading failed: {e}")
             return pd.DataFrame()
 
+    def _safe_dropdown_options(self, df, col):
+        if col in df.columns:
+            return [{'label': val, 'value': val} for val in sorted(df[col].dropna().unique())]
+        return []
+
     def _setup_layout(self):
         df = self._load_data()
-
-        def safe_dropdown_options(df, col):
-            if col in df.columns:
-                return [{'label': val, 'value': val} for val in sorted(df[col].dropna().unique())]
-            else:
-                self.logger.warning(f"Column '{col}' not found in dataset.")
-                return []
 
         layout_filters = html.Div([
             html.Label("Date Range:", style={'fontSize': '15px'}),
@@ -50,7 +47,7 @@ class Dashboard:
             html.Label("Telegramers Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='name-filter',
-                options=safe_dropdown_options(df, 'name'),
+                options=self._safe_dropdown_options(df, 'name'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -58,7 +55,7 @@ class Dashboard:
             html.Label("Campaign_Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='ts-name-filter',
-                options=safe_dropdown_options(df, 'ts_name'),
+                options=self._safe_dropdown_options(df, 'ts_name'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -66,7 +63,7 @@ class Dashboard:
             html.Label("Partners Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='partner-filter',
-                options=safe_dropdown_options(df, 'partner'),
+                options=self._safe_dropdown_options(df, 'partner'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -74,7 +71,7 @@ class Dashboard:
             html.Label("UserID:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='uid-filter',
-                options=safe_dropdown_options(df, 'uid'),
+                options=self._safe_dropdown_options(df, 'uid'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -116,7 +113,11 @@ class Dashboard:
                     style_table={'overflowX': 'auto', 'width': '100%'},
                     page_size=100
                 )
-            ], style={'width': '100%', 'padding': '10px', 'boxSizing': 'border-box'})
+            ], style={
+                'width': '100%',
+                'padding': '10px',
+                'boxSizing': 'border-box'
+            })
         ], style={'flex': '3', 'padding': '10px', 'boxSizing': 'border-box'})
 
         self.app.layout = html.Div([
@@ -149,18 +150,19 @@ class Dashboard:
         )
         def update_dashboard(name_filter, ts_name_filter, partner_filter, uid_filter, n_clicks, start_date, end_date):
             df = self._load_data()
+
             if df.empty:
                 return [], [], go.Figure(), [], [], []
 
             if start_date and end_date:
                 df = df[(df['action_date'] >= pd.to_datetime(start_date)) & (df['action_date'] <= pd.to_datetime(end_date))]
-            if name_filter and 'name' in df.columns:
+            if name_filter:
                 df = df[df['name'].isin(name_filter)]
-            if ts_name_filter and 'ts_name' in df.columns:
+            if ts_name_filter:
                 df = df[df['ts_name'].isin(ts_name_filter)]
-            if partner_filter and 'partner' in df.columns:
+            if partner_filter:
                 df = df[df['partner'].isin(partner_filter)]
-            if uid_filter and 'uid' in df.columns:
+            if uid_filter:
                 df = df[df['uid'].isin(uid_filter)]
 
             if df.empty:
@@ -172,14 +174,10 @@ class Dashboard:
             total_order = df['order_id'].nunique() if 'order_id' in df.columns else 0
 
             kpi_cards = [
-                html.Div([html.H4("Payout Sum"), html.P(f"₹ {payout_sum:,.2f}")],
-                         style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
-                html.Div([html.H4("Point Post Payout"), html.P(f"₹ {point_sum:,.2f}")],
-                         style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
-                html.Div([html.H4("Sale Amount"), html.P(f"₹ {sale_sum:,.2f}")],
-                         style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
-                html.Div([html.H4("Total Order"), html.P(f"{total_order:,}")],
-                         style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'})
+                html.Div([html.H4("Payout Sum"), html.P(f"₹ {payout_sum:,.2f}")], style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
+                html.Div([html.H4("Point Post Payout"), html.P(f"₹ {point_sum:,.2f}")], style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
+                html.Div([html.H4("Sale Amount"), html.P(f"₹ {sale_sum:,.2f}")], style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'}),
+                html.Div([html.H4("Total Order"), html.P(f"{total_order:,}")], style={'flex': '1', 'minWidth': '180px', 'textAlign': 'center'})
             ]
 
             df['action_date'] = df['action_date'].dt.date
@@ -231,12 +229,11 @@ class Dashboard:
             return pivot_data, pivot_columns, fig, full_data, full_columns, kpi_cards
 
     def run(self):
-        self.logger.info("Starting Dash server...")
-        self.app.run(debug=True)
+        self.app.run(host="0.0.0.0", port=8050, debug=False)
 
 
 dashboard = Dashboard()
-app = dashboard.app  # Expose Flask server
+app = dashboard.app  # For gunicorn
 
 if __name__ == "__main__":
     dashboard.run()
