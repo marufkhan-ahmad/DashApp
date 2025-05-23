@@ -77,17 +77,18 @@ class Dashboard:
             ),
 
             html.Button("Refresh Data", id='refresh-button', n_clicks=0,
-                        style={'fontSize': '15px', 'width': '100%', 'marginTop': '5px'})
+                        style={'fontSize': '15px', 'width': '100%','padding':'8px 0px', 'marginTop': '5px'})
         ], style={
             'flex': '1',
-            'minWidth': '150px',
-            'maxWidth': '250px',
+            
+            'maxWidth': '600px',
             'padding': '5px',
             'border': '1px solid #ccc',
             'borderRadius': '8px',
             'backgroundColor': '#f9f9f9',
             'boxSizing': 'border-box',
             'overflowY': 'auto',
+            'overflowX': 'hidden',
             'fontSize': '10px'
         })
 
