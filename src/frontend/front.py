@@ -19,6 +19,7 @@ class Dashboard:
         try:
             columns, data = self.db.fetch_data()
             df = pd.DataFrame(data, columns=columns)
+            df.columns = df.columns.str.strip()  # Clean column names
             df['action_date'] = pd.to_datetime(df['action_date'], errors='coerce')
             df.dropna(subset=['action_date'], inplace=True)
             return df
@@ -28,6 +29,13 @@ class Dashboard:
 
     def _setup_layout(self):
         df = self._load_data()
+
+        def safe_dropdown_options(df, col):
+            if col in df.columns:
+                return [{'label': val, 'value': val} for val in sorted(df[col].dropna().unique())]
+            else:
+                self.logger.warning(f"Column '{col}' not found in dataset.")
+                return []
 
         layout_filters = html.Div([
             html.Label("Date Range:", style={'fontSize': '15px'}),
@@ -42,7 +50,7 @@ class Dashboard:
             html.Label("Telegramers Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='name-filter',
-                options=[{'label': name, 'value': name} for name in sorted(df['name'].dropna().unique())],
+                options=safe_dropdown_options(df, 'name'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -50,7 +58,7 @@ class Dashboard:
             html.Label("Campaign_Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='ts-name-filter',
-                options=[{'label': ts, 'value': ts} for ts in sorted(df['ts_name'].dropna().unique())],
+                options=safe_dropdown_options(df, 'ts_name'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -58,7 +66,7 @@ class Dashboard:
             html.Label("Partners Name:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='partner-filter',
-                options=[{'label': p, 'value': p} for p in sorted(df['partner'].dropna().unique())],
+                options=safe_dropdown_options(df, 'partner'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -66,7 +74,7 @@ class Dashboard:
             html.Label("UserID:", style={'fontSize': '15px'}),
             dcc.Dropdown(
                 id='uid-filter',
-                options=[{'label': uid, 'value': uid} for uid in sorted(df['uid'].dropna().unique())],
+                options=safe_dropdown_options(df, 'uid'),
                 multi=True,
                 style={'fontSize': '15px'}
             ),
@@ -108,11 +116,7 @@ class Dashboard:
                     style_table={'overflowX': 'auto', 'width': '100%'},
                     page_size=100
                 )
-            ], style={
-                'width': '100%',
-                'padding': '10px',
-                'boxSizing': 'border-box'
-            })
+            ], style={'width': '100%', 'padding': '10px', 'boxSizing': 'border-box'})
         ], style={'flex': '3', 'padding': '10px', 'boxSizing': 'border-box'})
 
         self.app.layout = html.Div([
@@ -145,20 +149,18 @@ class Dashboard:
         )
         def update_dashboard(name_filter, ts_name_filter, partner_filter, uid_filter, n_clicks, start_date, end_date):
             df = self._load_data()
-
             if df.empty:
                 return [], [], go.Figure(), [], [], []
 
             if start_date and end_date:
-                df = df[(df['action_date'] >= pd.to_datetime(start_date)) &
-                        (df['action_date'] <= pd.to_datetime(end_date))]
-            if name_filter:
+                df = df[(df['action_date'] >= pd.to_datetime(start_date)) & (df['action_date'] <= pd.to_datetime(end_date))]
+            if name_filter and 'name' in df.columns:
                 df = df[df['name'].isin(name_filter)]
-            if ts_name_filter:
+            if ts_name_filter and 'ts_name' in df.columns:
                 df = df[df['ts_name'].isin(ts_name_filter)]
-            if partner_filter:
+            if partner_filter and 'partner' in df.columns:
                 df = df[df['partner'].isin(partner_filter)]
-            if uid_filter:
+            if uid_filter and 'uid' in df.columns:
                 df = df[df['uid'].isin(uid_filter)]
 
             if df.empty:
@@ -234,7 +236,7 @@ class Dashboard:
 
 
 dashboard = Dashboard()
-app = dashboard.app  # <- expose Dash's internal Flask server
+app = dashboard.app  # Expose Flask server
 
 if __name__ == "__main__":
     dashboard.run()
